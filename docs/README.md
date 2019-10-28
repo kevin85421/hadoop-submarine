@@ -72,7 +72,7 @@ And when GPU plans to be used:
 - GPU Driver.
 - Nvidia-docker.
 
-For your convenience, we provided installation documents to help you to set up your environment. You can always choose to have them installed in your own way.
+For your convenience, we provide installation documents to help you to set up your environment. You can always choose to have them installed in your own way.
 
 Use Submarine installer to install dependencies: [EN](../dev-support/submarine-installer/README.md) [CN](../dev-support/submarine-installer/README-CN.md)
 
