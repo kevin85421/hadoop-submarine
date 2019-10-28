@@ -57,7 +57,7 @@ some programs may appear abnormal. Of course, we also detected this in the syste
 
 ### Universal design
 
-Modular design, Submarine (Workbench) Server exists in the Submarine system, these two services need to provide clustering capabilities, 
+Modular design, because Submarine (Workbench) Server exists in the Submarine system, these two services need to provide clustering capabilities, 
 so we abstract the cluster function into a separate module for development so that Submarine (Workbench) Server can reuse the cluster function module.
 
 ### ClusterConfigure
