@@ -13,19 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
-
-def get_env(variable_name):
-    return os.environ.get(variable_name)
-
-
-def unset_variable(variable_name):
-    if variable_name in os.environ:
-        del os.environ[variable_name]
-
-
-def check_env_exists(variable_name):
-    if variable_name not in os.environ:
-        return False
-    return True
+modelDefaultParameters = {
+    "field_size": 39,
+    "feature_size": 117581,
+    "embedding_size": 256,
+    "learning_rate": 0.0005,
+    "batch_norm_decay": 0.9,
+    "l2_reg": 0.0001,
+    "deep_layers": '400,400,400',
+    "dropout": '0.5,0.5,0.5',
+    "batch_norm": False,
+    "optimizer": 'adam',
+    "loss_type": 'log_loss',
+    "log_steps": 10,
+    "num_threads": 8,
+    "num_gpu": 0,
+    "mode": 'local',
+}
