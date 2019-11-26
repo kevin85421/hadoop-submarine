@@ -33,7 +33,7 @@ def make_input_fn(filenames, batch_size=256, num_epochs=2, perform_shuffle=False
     return _input_fn
 
 
-def main(_):
+if __name__ == "__main__":
     data_dir = './data/'
     train_data = data_dir + 'tr.libsvm'
     valid_data = data_dir + 'va.libsvm'
@@ -50,8 +50,3 @@ def main(_):
     model.evaluate(make_input_fn(valid_data))
     # Predict
     model.predict(make_input_fn(test_data))
-
-
-if __name__ == "__main__":
-    tf.logging.set_verbosity(tf.logging.INFO)
-    tf.app.run()

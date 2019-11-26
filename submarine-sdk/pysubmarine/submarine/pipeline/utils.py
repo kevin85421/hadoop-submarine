@@ -40,6 +40,7 @@ def get_TFConfig(params):
     :param params: model parameters that contain total number of gpu or cpu the model intends to use
     :return: The class specifies the configurations for an Estimator run
     """
+    config = tf.estimator.RunConfig()
     if check_env_exists('TF_CONFIG'):
         return tf.estimator.RunConfig()
     if params['mode'] == 'local':  # local mode

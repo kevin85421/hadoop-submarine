@@ -17,6 +17,7 @@ import tensorflow as tf
 import submarine.pipeline.utils
 from submarine.pipeline.model.parameters import modelDefaultParameters
 from submarine.pipeline.utils import get_TFConfig
+from submarine.pipeline.model.tensorflowModel import tensorflowModel
 
 
 def batch_norm_layer(x, train_phase, scope_bn, batch_norm_decay):
@@ -148,8 +149,17 @@ def model_fn(features, labels, mode, params):
             train_op=train_op)
 
 
-class deepFM:
+class deepFM(tensorflowModel):
     def __init__(self, model_dir, config=None, model_params=None, json_path=None):
+        """
+        Create a tensorflow DeepFM model
+        :param model_dir: A model directory for saving model
+        :param config: The class specifies the configurations for an Estimator run
+        :param model_params: defines the different
+        parameters of the model, features, preprocessing and training
+        :param json_path: The json file that specifies the model parameters.
+        """
+        super(tensorflowModel, self).__init__()
         self.model_dir = model_dir
         self.type = 'Tensorflow.estimator'
         self.model_params = submarine.pipeline.utils.merge_dicts(model_params, modelDefaultParameters)
@@ -158,21 +168,33 @@ class deepFM:
             model_fn=model_fn, model_dir=model_dir, params=self.model_params, config=config)
 
     def train(self, train_input_fn, eval_input_fn):
+        """
+        Trains a pre-defined tensorflow estimator model with given training data
+        :param train_input_fn: A function that provides input data for training.
+        :param eval_input_fn: A function that provides input data for evaluating.
+        :return: None
+        """
         train_spec = tf.estimator.TrainSpec(
             input_fn=train_input_fn)
         eval_spec = tf.estimator.EvalSpec(
-            input_fn=eval_input_fn,
-            start_delay_secs=1000, throttle_secs=1200)
+            input_fn=eval_input_fn)
         tf.estimator.train_and_evaluate(self.model, train_spec, eval_spec)
 
     def evaluate(self, eval_input_fn):
+        """
+        Evaluates a pre-defined tensorflow estimator model with given evaluate data
+        :param eval_input_fn: A function that provides input data for evaluating.
+        :return: A dict containing the evaluation metrics specified in `eval_input_fn` keyed by
+        name, as well as an entry `global_step` which contains the value of the
+        global step for which this evaluation was performed
+        """
         self.model.evaluate(input_fn=eval_input_fn)
 
     def predict(self, test_input_fn):
-        self.model.predict(input_fn=test_input_fn, predict_keys="prob")
-
-    def setParameter(self, key, value):
-        pass
-
-    def getParameter(self, key):
-        pass
+        """
+        Yields predictions with given features.
+        :param test_input_fn: A function that constructs the features.
+         Prediction continues until input_fn raises an end-of-input exception
+        :return: Evaluated values of predictions tensors.
+        """
+        return self.model.predict(input_fn=test_input_fn, predict_keys="prob")

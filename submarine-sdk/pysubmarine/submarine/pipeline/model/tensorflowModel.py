@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 
 class tensorflowModel:
@@ -24,40 +24,21 @@ class tensorflowModel:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, model_dir, config=None, model_params=None, json_path=None):
-        """
-        Create a tensorflow DeepFM model
-        :param model_dir: A model directory for saving model
-        :param config: The class specifies the configurations for an Estimator run
-        :param model_params: defines the different
-        parameters of the model, features, preprocessing and training
-        :param json_path: The json file that specifies the model parameters.
-        """
+    @abstractmethod
+    def __init__(self):
+        pass
 
+    @abstractmethod
     def train(self, train_input_fn, eval_input_fn):
-        """
-        Trains a pre-defined tensorflow estimator model with given training data
-        :param train_input_fn: A function that provides input data for training.
-        :param eval_input_fn: A function that provides input data for evaluating.
-        :return: None
-        """
         pass
 
+    @abstractmethod
     def evaluate(self, eval_input_fn):
-        """
-        Evaluates a pre-defined tensorflow estimator model with given evaluate data
-        :param eval_input_fn: A function that provides input data for evaluating.
-        :return: None
-        """
         pass
 
+    @abstractmethod
     def predict(self, test_input_fn):
-        """
-        Yields predictions with given features.
-        :param test_input_fn: A function that constructs the features.
-         Prediction continues until input_fn raises an end-of-input exception
-        :return: Evaluated values of predictions tensors.
-        """
+        pass
 
     def setParameter(self, key, value):
         """
