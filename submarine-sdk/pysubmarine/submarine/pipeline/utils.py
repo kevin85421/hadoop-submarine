@@ -101,3 +101,16 @@ def get_TFConfig(params):
     else:
         raise ValueError("mode should be local or distributed")
     return tf_config
+
+def generate_json_template(defaultParams, path, fileName):
+    """
+    [Function]: write "$fileName.json", a JSON template, to $path
+    :param defaultParams: default parameters for model parameters
+    :type params: Dictionary
+    return
+    """    
+    json_template = open(path + '/'+ fileName +'.json', 'w')
+    json_template.write(json.dumps(defaultParams, sort_keys=True, indent=4))
+    json_template.close()
+
+
