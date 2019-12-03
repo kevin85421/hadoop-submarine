@@ -123,7 +123,6 @@ def get_TFConfig(params):
         raise ValueError("mode should be local or distributed")
     return tf_config
 
-
 def get_from_registry(key, registry):
     if hasattr(key, 'lower'):
         key = key.lower()
