@@ -13,13 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import tensorflow as tf
 
+logger = logging.getLogger(__name__)
 
-def libsvm_input_fn(filepath, batch_size=256, num_epochs=2, perform_shuffle=False):
+
+def libsvm_input_fn(filepath, batch_size=256, num_epochs=3,  # pylint: disable=W0613
+                    perform_shuffle=False, delimiter=" ", **kwargs):
     def _input_fn():
         def decode_libsvm(line):
-            columns = tf.string_split([line], ' ')
+            columns = tf.string_split([line], delimiter)
             labels = tf.string_to_number(columns.values[0], out_type=tf.float32)
             splits = tf.string_split(columns.values[1:], ':')
             id_vals = tf.reshape(splits.values, splits.dense_shape)
@@ -28,14 +32,12 @@ def libsvm_input_fn(filepath, batch_size=256, num_epochs=2, perform_shuffle=Fals
             feat_vals = tf.string_to_number(feat_vals, out_type=tf.float32)
             return {"feat_ids": feat_ids, "feat_vals": feat_vals}, labels
 
-        # Extract lines from input files using the Dataset API, can pass one filename or filename list
-        dataset = tf.data.TextLineDataset(filepath).map(decode_libsvm, num_parallel_calls=10).prefetch(500000)
+        dataset = tf.data.TextLineDataset(filepath)\
+            .map(decode_libsvm, num_parallel_calls=10).prefetch(500000)
 
-        # Randomizes input using a window of 256 elements (read into memory)
         if perform_shuffle:
-            dataset = dataset.shuffle(buffer_size=256)
+            dataset = dataset.shuffle(buffer_size=batch_size)
 
-        # epochs from blending together.
         dataset = dataset.repeat(num_epochs)
         dataset = dataset.batch(batch_size)
 

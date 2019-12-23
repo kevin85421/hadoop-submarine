@@ -16,7 +16,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class tensorflowModel:
+class abstractModel:
     """
     Abstract class for tensorflow model.
     This class defines the API interface for user to create a tensorflow estimator model.
@@ -29,30 +29,13 @@ class tensorflowModel:
         pass
 
     @abstractmethod
-    def train(self, train_input_fn, eval_input_fn):
+    def train(self, train_input_fn=None, eval_input_fn=None, **kwargs):
         pass
 
     @abstractmethod
-    def evaluate(self, eval_input_fn):
+    def evaluate(self, eval_input_fn=None, **kwargs):
         pass
 
     @abstractmethod
-    def predict(self, test_input_fn):
-        pass
-
-    def setParameter(self, key, value):
-        """
-        set model parameter
-        :param key: a key of model parameters
-        :param value: a value of model parameters
-        :return: None
-        """
-        pass
-
-    def getParameter(self, key):
-        """
-        set model parameter
-        :param key: a key of model parameters
-        :return: a value of model parameters
-        """
+    def predict(self, test_input_fn=None, **kwargs):
         pass

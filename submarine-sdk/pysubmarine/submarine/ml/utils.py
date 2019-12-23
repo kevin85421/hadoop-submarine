@@ -13,10 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import tensorflow as tf
 import json
 import os
-from submarine.utils.env import check_env_exists
+import copy
+from collections import Mapping
+
+logger = logging.getLogger(__name__)
+
+
+def sanity_checks(params):
+    assert 'input' in params, (
+        'Does not define any input parameters'
+    )
+    assert 'type' in params['input'], (
+        'Does not define any input type'
+    )
+    assert 'output' in params, (
+        'Does not define any output parameters'
+    )
 
 
 def merge_json(path, defaultParams):
@@ -24,10 +40,12 @@ def merge_json(path, defaultParams):
     Merge parameters json parameter into default parameters
     :param path: The json file that specifies the model parameters.
     :type path: String
-    :param defaultParams: default parameters for model parameters
+    :param defaultParams: default parameters for model
     :type path: Dictionary
     :return:
     """
+    if path is None or not os.path.isfile(path):
+        return defaultParams
     with open(path) as json_data:
         params = json.load(json_data)
     return merge_dicts(params, defaultParams)
@@ -35,30 +53,30 @@ def merge_json(path, defaultParams):
 
 def merge_dicts(params, defaultParams):
     """
-    Merge two dictionary
-    :param params: parameters will be merged
+    If model parameter not specify in params, use parameter in defaultParams
+    :param params: parameters which will be merged
     :type params: Dictionary
-    :param defaultParams: default parameters for model parameters
+    :param defaultParams: default parameters for model
     :type params: Dictionary
     :return:
     """
     if params is None:
         return defaultParams
-    merge_params = defaultParams.copy()
-    merge_params.update(params)
-    return merge_params
+
+    dct = copy.deepcopy(defaultParams)
+    for k, _ in params.items():
+        if (k in dct and isinstance(dct[k], dict)
+                and isinstance(defaultParams[k], Mapping)):
+            dct[k] = merge_dicts(params[k], dct[k])
+        else:
+            dct[k] = params[k]
+    return dct
 
 
 def _get_session_config_from_env_var():
     """Returns a tf.ConfigProto instance with appropriate device_filters set."""
 
     tf_config = json.loads(os.environ.get('TF_CONFIG', '{}'))
-
-    # GPU limit: TensorFlow by default allocates all GPU memory:
-    # If multiple workers run in same host you may see OOM errors:
-    # Use as workaround if not using Hadoop 3.1
-    # Change percentage accordingly:
-    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.25)
 
     if tf_config and 'task' in tf_config and 'type' in tf_config['task'] \
             and 'index' in tf_config['task']:
@@ -79,28 +97,44 @@ def _get_session_config_from_env_var():
 def get_TFConfig(params):
     """
     Get TF_CONFIG to run local or distributed training, If user don't set TF_CONFIG environment
-     variables, by default set local mode
+    variables, by default set local mode
     :param params: model parameters that contain total number of gpu or cpu the model
     intends to use
     :type params: Dictionary
     :return: The class specifies the configurations for an Estimator run
     """
-    if params['mode'] == 'local':  # local mode
+    if params["training"]['mode'] == 'local':  # local mode
         tf_config = tf.estimator.RunConfig().replace(
             session_config=tf.ConfigProto(
-                device_count={'GPU': params['num_gpu'], 'CPU': params['num_threads']}),
-            log_step_count_steps=params['log_steps'], save_summary_steps=params['log_steps'])
-    elif params['mode'] == 'submarine':  # TODO distributed mode
+                device_count={'GPU': params["training"]['num_gpu'],
+                              'CPU': params["training"]['num_threads']}),
+            log_step_count_steps=params["training"]['log_steps'],
+            save_summary_steps=params["training"]['log_steps'])
+
+    elif params["training"]['mode'] == 'distributed':
         tf_config = tf.estimator.RunConfig(
             experimental_distribute=tf.contrib.distribute.DistributeConfig(
                 train_distribute=tf.contrib.distribute.ParameterServerStrategy(),
                 eval_distribute=tf.contrib.distribute.MirroredStrategy()),
             session_config=_get_session_config_from_env_var(),
-            save_summary_steps=params['log_steps'],
-            log_step_count_steps=params['log_steps'])
+            save_summary_steps=params["training"]['log_steps'],
+            log_step_count_steps=params["training"]['log_steps'])
     else:
         raise ValueError("mode should be local or distributed")
     return tf_config
+
+
+def get_from_registry(key, registry):
+    if hasattr(key, 'lower'):
+        key = key.lower()
+    if key in registry:
+        return registry[key]
+    else:
+        raise ValueError(
+            'Key {} not supported, available options: {}'.format(
+                key, registry.keys()
+            )
+        )
 
 def generate_json_template(defaultParams, path, fileName):
     """
@@ -112,5 +146,3 @@ def generate_json_template(defaultParams, path, fileName):
     json_template = open(path + '/'+ fileName +'.json', 'w')
     json_template.write(json.dumps(defaultParams, sort_keys=True, indent=4))
     json_template.close()
-
-

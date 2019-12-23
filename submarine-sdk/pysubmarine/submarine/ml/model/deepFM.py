@@ -15,10 +15,11 @@
 
 import logging
 import tensorflow as tf
-import submarine.pipeline.utils
-from submarine.pipeline.model.parameters import modelDefaultParameters
-from submarine.pipeline.utils import get_TFConfig
-from submarine.pipeline.model.tensorflowModel import tensorflowModel
+import submarine.ml.utils
+from submarine.ml.parameters import defaultParameters
+from submarine.ml.utils import get_TFConfig, get_from_registry, sanity_checks
+from submarine.ml.model.abstractModel import abstractModel
+from submarine.ml.registries import input_fn_registry
 
 logger = logging.getLogger(__name__)
 
@@ -35,37 +36,39 @@ def batch_norm_layer(x, train_phase, scope_bn, batch_norm_decay):
 
 
 def model_fn(features, labels, mode, params):
-    field_size = params["field_size"]
-    feature_size = params["feature_size"]
-    embedding_size = params["embedding_size"]
-    l2_reg = params["l2_reg"]
-    learning_rate = params["learning_rate"]
-    batch_norm = params["batch_norm"]
-    batch_norm_decay = params["batch_norm_decay"]
-    optimizer = params["optimizer"]
+    field_size = params["training"]["field_size"]
+    feature_size = params["training"]["feature_size"]
+    embedding_size = params["training"]["embedding_size"]
+    l2_reg = params["training"]["l2_reg"]
+    learning_rate = params["training"]["learning_rate"]
+    batch_norm = params["training"]["batch_norm"]
+    batch_norm_decay = params["training"]["batch_norm_decay"]
+    optimizer = params["training"]["optimizer"]
+    seed = params["training"]["seed"]
+    metric = params['output']['metric']
 
-    layers = list(map(int, params["deep_layers"].split(',')))
-    dropout = list(map(float, params["dropout"].split(',')))
-    # Build weights
-    FM_B = tf.get_variable(name='fm_bias', shape=[1], initializer=tf.constant_initializer(0.0))
-    FM_W = tf.get_variable(name='fm_w', shape=[feature_size],
-                           initializer=tf.glorot_normal_initializer())
-    FM_V = tf.get_variable(name='fm_v', shape=[feature_size, embedding_size],
-                           initializer=tf.glorot_normal_initializer())
+    layers = list(map(int, params["training"]["deep_layers"].split(',')))
+    dropout = list(map(float, params["training"]["dropout"].split(',')))
 
-    # Build feature
-    feat_ids = features['feat_ids']
-    feat_ids = tf.reshape(feat_ids, shape=[-1, field_size])
-    feat_vals = features['feat_vals']
-    feat_vals = tf.reshape(feat_vals, shape=[-1, field_size])
+    tf.set_random_seed(seed)
+    fm_bias = tf.get_variable(name='fm_bias', shape=[1], initializer=tf.constant_initializer(0.0))
+    fm_weight = tf.get_variable(name='fm_weight', shape=[feature_size],
+                                initializer=tf.glorot_normal_initializer())
+    fm_vector = tf.get_variable(name='fm_vector', shape=[feature_size, embedding_size],
+                                initializer=tf.glorot_normal_initializer())
 
-    # Build f(x)
+    with tf.variable_scope("Feature"):
+        feat_ids = features['feat_ids']
+        feat_ids = tf.reshape(feat_ids, shape=[-1, field_size])
+        feat_vals = features['feat_vals']
+        feat_vals = tf.reshape(feat_vals, shape=[-1, field_size])
+
     with tf.variable_scope("First_order"):
-        feat_weights = tf.nn.embedding_lookup(FM_W, feat_ids)
+        feat_weights = tf.nn.embedding_lookup(fm_weight, feat_ids)
         y_w = tf.reduce_sum(tf.multiply(feat_weights, feat_vals), 1)
 
     with tf.variable_scope("Second_order"):
-        embeddings = tf.nn.embedding_lookup(FM_V, feat_ids)
+        embeddings = tf.nn.embedding_lookup(fm_vector, feat_ids)
         feat_vals = tf.reshape(feat_vals, shape=[-1, field_size, 1])
         embeddings = tf.multiply(embeddings, feat_vals)
         sum_square = tf.square(tf.reduce_sum(embeddings, 1))
@@ -99,11 +102,11 @@ def model_fn(features, labels, mode, params):
         y_d = tf.reshape(y_deep, shape=[-1])
 
     with tf.variable_scope("DeepFM-out"):
-        y_bias = FM_B * tf.ones_like(y_d, dtype=tf.float32)
+        y_bias = fm_bias * tf.ones_like(y_d, dtype=tf.float32)
         y = y_bias + y_w + y_v + y_d
         pred = tf.sigmoid(y)
 
-    predictions = {"prob": pred}
+    predictions = {"probabilities": pred}
     export_outputs = {
         tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
             tf.estimator.export.PredictOutput(predictions)}
@@ -114,15 +117,17 @@ def model_fn(features, labels, mode, params):
             predictions=predictions,
             export_outputs=export_outputs)
 
-    # ------build loss------
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=y, labels=labels)) + \
-           l2_reg * tf.nn.l2_loss(FM_W) + \
-           l2_reg * tf.nn.l2_loss(FM_V)
+    with tf.name_scope("Loss"):
+        loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=y, labels=labels)) + \
+               l2_reg * tf.nn.l2_loss(fm_weight) + l2_reg * tf.nn.l2_loss(fm_vector)
 
     # Provide an estimator spec for `ModeKeys.EVAL`
-    eval_metric_ops = {
-        "auc": tf.metrics.auc(labels, pred)
-    }
+    eval_metric_ops = {}
+    if metric == 'auc':
+        eval_metric_ops['auc'] = tf.metrics.auc(labels, pred)
+    else:
+        raise TypeError("Can not find loss_type :", params['training']['loss_type'])
+
     if mode == tf.estimator.ModeKeys.EVAL:
         return tf.estimator.EstimatorSpec(
             mode=mode,
@@ -130,18 +135,19 @@ def model_fn(features, labels, mode, params):
             loss=loss,
             eval_metric_ops=eval_metric_ops)
 
-    # ------build optimizer------
-    if optimizer == 'adam':
-        op = tf.train.AdamOptimizer(learning_rate=learning_rate,
-                                    beta1=0.9, beta2=0.999, epsilon=1e-8)
-    elif optimizer == 'adagrad':
-        op = tf.train.AdagradOptimizer(learning_rate=learning_rate, initial_accumulator_value=1e-8)
-    elif optimizer == 'momentum':
-        op = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.95)
-    elif optimizer == 'ftrl':
-        op = tf.train.FtrlOptimizer(learning_rate)
-    else:
-        raise TypeError("Can not find optimizer :", optimizer)
+    with tf.name_scope("Optimizer"):
+        if optimizer == 'adam':
+            op = tf.train.AdamOptimizer(learning_rate=learning_rate,
+                                        beta1=0.9, beta2=0.999, epsilon=1e-8)
+        elif optimizer == 'adagrad':
+            op = tf.train.AdagradOptimizer(
+                learning_rate=learning_rate, initial_accumulator_value=1e-8)
+        elif optimizer == 'momentum':
+            op = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.95)
+        elif optimizer == 'ftrl':
+            op = tf.train.FtrlOptimizer(learning_rate)
+        else:
+            raise TypeError("Can not find optimizer :", optimizer)
 
     train_op = op.minimize(loss, global_step=tf.train.get_global_step())
 
@@ -154,58 +160,77 @@ def model_fn(features, labels, mode, params):
             train_op=train_op)
 
 
-class deepFM(tensorflowModel):
-    def __init__(self, model_dir, config=None, model_params=None, json_path=None):
+class deepFM(abstractModel):
+    def __init__(self, model_params=None, json_path=None):
         """
         Create a tensorflow DeepFM model
-        :param model_dir: A model directory for saving model
-        :param config: The class specifies the configurations for an Estimator run
         :param model_params: defines the different
         parameters of the model, features, preprocessing and training
-        :param json_path: The json file that specifies the model parameters.
+        :param json_path: The JSON file that specifies the model parameters.
         """
-        super(tensorflowModel, self).__init__()
-        self.model_dir = model_dir
-        self.type = 'Tensorflow.estimator'
-        self.model_params = submarine.pipeline.utils.merge_dicts(model_params, modelDefaultParameters)
-        self.model_params = submarine.pipeline.utils.merge_json(json_path, self.model_params)
-        print("Model parameters :", self.model_params)
+        super().__init__()
+        self.model_params = submarine.ml.utils.merge_dicts(model_params, defaultParameters)
+        self.model_params = submarine.ml.utils.merge_json(json_path, self.model_params)
+        sanity_checks(self.model_params)
+        logging.info("Model parameters : %s", self.model_params)
+        self.input_type = self.model_params['input']['type']
+        self.model_dir = self.model_params['output']['save_model_dir']
         self.config = get_TFConfig(self.model_params)
         self.model = tf.estimator.Estimator(
-            model_fn=model_fn, model_dir=model_dir, params=self.model_params, config=config)
+            model_fn=model_fn, model_dir=self.model_dir,
+            params=self.model_params, config=self.config)
 
-    def train(self, train_input_fn, eval_input_fn, **kwargs):
+    def train(self, train_input_fn=None, eval_input_fn=None, **kwargs):
         """
         Trains a pre-defined tensorflow estimator model with given training data
         :param train_input_fn: A function that provides input data for training.
         :param eval_input_fn: A function that provides input data for evaluating.
         :return: None
         """
+        if train_input_fn is None:
+            train_input_fn = get_from_registry(
+                self.input_type, input_fn_registry)(
+                filepath=self.model_params['input']['train_data'],
+                **self.model_params['training'])
+        if eval_input_fn is None:
+            eval_input_fn = get_from_registry(
+                self.input_type, input_fn_registry)(
+                filepath=self.model_params['input']['valid_data'],
+                **self.model_params['training'])
+
         train_spec = tf.estimator.TrainSpec(
             input_fn=train_input_fn)
         eval_spec = tf.estimator.EvalSpec(
             input_fn=eval_input_fn)
         tf.estimator.train_and_evaluate(self.model, train_spec, eval_spec)
 
-    def evaluate(self, eval_input_fn, **kwargs):
+    def evaluate(self, eval_input_fn=None, **kwargs):
         """
-        Evaluates a pre-defined tensorflow estimator model with given evaluate data
+        Evaluates a pre-defined Tensorflow estimator model with given evaluate data
         :param eval_input_fn: A function that provides input data for evaluating.
         :return: A dict containing the evaluation metrics specified in `eval_input_fn` keyed by
         name, as well as an entry `global_step` which contains the value of the
         global step for which this evaluation was performed
         """
-        self.model.evaluate(input_fn=eval_input_fn, **kwargs)
+        if eval_input_fn is None:
+            eval_input_fn = get_from_registry(
+                self.input_type, input_fn_registry)(
+                filepath=self.model_params['input']['valid_data'],
+                **self.model_params['training'])
 
-    def predict(self, test_input_fn, **kwargs):
+        return self.model.evaluate(input_fn=eval_input_fn, **kwargs)
+
+    def predict(self, test_input_fn=None, **kwargs):
         """
         Yields predictions with given features.
         :param test_input_fn: A function that constructs the features.
          Prediction continues until input_fn raises an end-of-input exception
         :return: Evaluated values of predictions tensors.
         """
-        predict_keys = kwargs.get('predict_keys')
-        kwargs.pop('predict_keys')
-        if predict_keys is None:
-            predict_keys = 'prob'
-        return self.model.predict(input_fn=test_input_fn, predict_keys=predict_keys, **kwargs)
+        if test_input_fn is None:
+            test_input_fn = get_from_registry(
+                self.input_type, input_fn_registry)(
+                filepath=self.model_params['input']['test_data'],
+                **self.model_params['training'])
+
+        return self.model.predict(input_fn=test_input_fn, **kwargs)
