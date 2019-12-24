@@ -34,11 +34,7 @@ You can reach out to the community members via any one of the following ways:
 
 You can start by finding an existing issue with the [https://issues.apache.org/jira/projects/SUBMARINE/issues/SUBMARINE?filter=allopenissues](https://issues.apache.org/jira/projects/SUBMARINE/issues/SUBMARINE?filter=allopenissues) label. These issues are well suited for new contributors. 
 
-<<<<<<< HEAD
 If a PR (Pull Request) submitted to the [Submarine Github](https://github.com/apache/submarine) projects by you is approved and merged, then you become a Submarine Contributor. 
-=======
-If a PR (Pull Request) submitted to the [Submarine](https://github.com/apache/submarine) projects by you is approved and merged, then you become a Submarine Contributor. 
->>>>>>> SUBMARINE-265. Change hadoop-submarine to submarine in the repo
 
 If you want to work on a new idea of relatively small scope:
 
@@ -46,11 +42,7 @@ If you want to work on a new idea of relatively small scope:
 
 2. The repo owners will respond to your issue promptly.
 
-<<<<<<< HEAD
 3. Submit a [pull request of Submarine](https://github.com/apache/submarine) containing a tested change. 
-=======
-3. Submit a [pull request](https://github.com/apache/submarine) containing a tested change. 
->>>>>>> SUBMARINE-265. Change hadoop-submarine to submarine in the repo
 
 Once you become a contributor of Apache Submarine, check your name here: [CONTRIBUTORS](contributors.md)
 
@@ -72,8 +64,4 @@ Communication within the Submarine community abides by [Apache’s Code of Condu
 
 ## License
 
-<<<<<<< HEAD
 Submarine source code is under the Apache 2.0 license. See the [LICENSE](https://github.com/apache/submarine/blob/master/LICENSE) file for details.
-=======
-Submarine Community is under the Apache 2.0 license. See the [LICENSE](https://github.com/apache/submarine/blob/master/LICENSE) file for details.
->>>>>>> SUBMARINE-265. Change hadoop-submarine to submarine in the repo

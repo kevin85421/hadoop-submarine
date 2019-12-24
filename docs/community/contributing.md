@@ -259,22 +259,7 @@ git push --set-upstream ${your_remote_name} my-cherry-pick
 ## Continuous Integration
 
 Hadoop Submarine project's CI system will collect information from pull request author's Travis-ci and display status in the pull request.
-<<<<<<< HEAD
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 Each individual contributor should setup Travis-ci for the fork before making a pull-request. Go to [https://travis-ci.org/profile](https://travis-ci.org/profile) and switch on 'submarine' repository.
 
-=======
 
-Each individual contributor should setup Travis-ci for the fork before making a pull-request. Go to [https://travis-ci.org/profile](https://travis-ci.org/profile) and switch on 'Hadoop-submarine' repository.
-=======
-<<<<<<< HEAD
-Each individual contributor should setup Travis-ci for the fork before making a pull-request. Go to [https://travis-ci.org/profile](https://travis-ci.org/profile) and switch on 'Hadoop-submarine' repository.
-=======
-Each individual contributor should setup Travis-ci for the fork before making a pull-request. Go to [https://travis-ci.org/profile](https://travis-ci.org/profile) and switch on 'hadoop-submarine' repository.
->>>>>>> SUBMARINE-263. Document grammar improvement
->>>>>>> SUBMARINE-263. Document grammar improvement
-=======
-Each individual contributor should setup Travis-ci for the fork before making a pull-request. Go to [https://travis-ci.org/profile](https://travis-ci.org/profile) and switch on 'submarine' repository.
->>>>>>> SUBMARINE-265. Change hadoop-submarine to submarine in the repo
