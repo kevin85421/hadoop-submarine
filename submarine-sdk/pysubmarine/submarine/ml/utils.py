@@ -145,3 +145,35 @@ def generate_json_template(defaultParams, path, fileName):
     json_template = open(path + '/'+ fileName +'.json', 'w')
     json_template.write(json.dumps(defaultParams, sort_keys=True, indent=4))
     json_template.close()
+
+def json_validate(defaultParams, inputParams):
+    # check parameters data type 
+    if not isinstance(defaultParams, dict):
+        print("[INVALID]: defaultParams is not dict!")
+        return False
+    if not isinstance(inputParams, dict):
+        print("[INVALID]: inputParams is not dict!")
+        return False
+
+    # check JSON validation
+    for key in inputParams:
+        if key in defaultParams:
+            if not isinstance(defaultParams[key], type(inputParams[key])):
+                print("[INVALID]: The data type of value of key \"" + key + "\" is " + str(type(inputParams[key])) + ", but it must be " + str(type(defaultParams[key])) + ".")
+                return False
+            else:
+                if isinstance(inputParams[key], dict):
+                    for second_key in inputParams[key]:
+                        if second_key in defaultParams[key]:
+                            if not isinstance(defaultParams[key][second_key], type(inputParams[key][second_key])):
+                                print("[INVALID]: The data type of value of key \"" + second_key + "\" is " + 
+                                        str(type(inputParams[key][second_key])) + ", but it must be " + str(type(defaultParams[key][second_key])) + ".")
+                                return False
+                        else:
+                             print("[INVALID]: key \"" + second_key + "\" is an invalid parameter!")
+                             return False
+        else:
+            print("[INVALID]: key \"" + key + "\" is an invalid parameter!")
+            return False
+    return True
+

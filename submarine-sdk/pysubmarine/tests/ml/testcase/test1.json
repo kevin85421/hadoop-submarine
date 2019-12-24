@@ -1,0 +1,20 @@
+{  
+   "total_rows":10000,
+   "offset":0,
+   "rows":  
+        { 
+            "id":"005584833b8e2063f04ff713",
+            "key":"00558433b8e2063f04ff713",
+            "value":{  
+                "rev":"1-8137baa51a2f335b0215ba9d08"
+            },
+            "doc":{  
+                "_id":"0055842eb0063f04ff713",
+                "_rev":"1-8137baa51a2f335b0215ba9d08",
+                "value":1,
+                "date":"2017-04-07T12:38:06.336Z",
+                "date_inmilli":1491568686336,
+                "sensorType":"sensor"
+            }
+        }
+}

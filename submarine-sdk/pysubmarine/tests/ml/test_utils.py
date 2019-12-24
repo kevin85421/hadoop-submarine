@@ -16,7 +16,7 @@
 import pytest
 import json
 from submarine.ml.utils import sanity_checks, merge_json, merge_dicts,\
-    get_from_registry, get_TFConfig
+    get_from_registry, get_TFConfig, json_validate
 
 
 @pytest.fixture(scope="function")
@@ -80,3 +80,46 @@ def test_get_TFConfig():
     # run distributed training
     params.update({'training': {'mode': 'distributed', 'log_steps': 10}})
     get_TFConfig(params)
+
+def test_json_validate():
+    with open('testcase/test.json', 'r') as f:
+        defaultParams = json.load(f)
+    # valid cases
+    # [CASE1]: remove valid secondKey 
+    with open('testcase/test2.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is True
+    # [CASE2]: change the values of firstKeys 
+    with open('testcase/test5.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is True
+    # [CASE3]: change the values of secondKeys
+    with open('testcase/test6.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is True
+    # [CASE4]: remove all secondKeys
+    with open('testcase/test7.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is True
+    # [CASE5]: empty JSON file
+    with open('testcase/test9.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is True
+
+    # invalid cases
+    # [CASE1]: Change the data type of a secondValue 
+    with open('testcase/test1.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is False
+    # [CASE2]: Add an invalid secondKey
+    with open('testcase/test3.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is False
+    # [CASE3]: Add an invalid firstKey
+    with open('testcase/test4.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is False
+    # [CASE4]: Change the data type of a secondValue
+    with open('testcase/test8.json', 'r') as test_file:
+        inputParams = json.load(test_file)
+    assert json_validate(defaultParams, inputParams) is False
