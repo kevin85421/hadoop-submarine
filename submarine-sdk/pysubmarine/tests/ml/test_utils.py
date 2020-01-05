@@ -15,6 +15,7 @@
 
 import pytest
 import json
+import os
 from submarine.ml.utils import sanity_checks, merge_json, merge_dicts,\
     get_from_registry, get_TFConfig, json_validate
 
