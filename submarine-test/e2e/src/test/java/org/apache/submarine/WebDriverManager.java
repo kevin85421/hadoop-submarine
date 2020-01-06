@@ -57,7 +57,6 @@ public class WebDriverManager {
                 LOG.info("Exception in WebDriverManager while FireFox Driver");
             }
         }
-
         String url = "http://127.0.0.1:32882";
         driver.get(url);
         return driver;
@@ -106,7 +105,7 @@ public class WebDriverManager {
         }
         LOG.info("[SUCCESS] Download of Gecko version: " + GECKODRIVER_VERSION); 
     }
-    // TODO(Kai-Hsun Chen): need to be tested on Windows, MacOS, and Linux
+    // TODO(Kai-Hsun Chen): need to be tested on MacOS, and Linux
     public static String getFirefoxVersion() {
         String firefoxVersionCmd = "firefox -v";
         String version = "";
