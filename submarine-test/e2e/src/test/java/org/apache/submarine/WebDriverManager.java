@@ -34,8 +34,6 @@ public class WebDriverManager {
 
   public final static Logger LOG = LoggerFactory.getLogger(WebDriverManager.class);
 
-  private static String downLoadsDir = "";
-
   private static boolean webDriverIsDownloaded = false;
 
   private static String webDriverPath = "";
@@ -77,7 +75,7 @@ public class WebDriverManager {
     while (System.currentTimeMillis() - start < 60 * 1000) {
       // wait for page load
       try {
-        (new WebDriverWait(driver, 60)).until(new ExpectedCondition<Boolean>() {
+        (new WebDriverWait(driver, 60, 5000)).until(new ExpectedCondition<Boolean>() {
           @Override
           public Boolean apply(WebDriver d) {
             // return d.findElement(By.tagName("div"))
