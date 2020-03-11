@@ -25,6 +25,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.Dimension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -49,7 +50,11 @@ public class datadictIT extends AbstractSubmarineIT {
   }
 
   // @Test TODO(kevin85421): Due to the undeterministic behavior of travis, I decide to comment it.
+  @Test
   public void dataDictTest() throws Exception {
+    LOG.info("Window size = " + driver.manage().window().getSize());
+    // driver.manage().window().setSize(new Dimension(1920,1080));
+    // LOG.info("Window size = " + driver.manage().window().getSize());
     // Login
     LOG.info("Login");
     pollingWait(By.cssSelector("input[ng-reflect-name='userName']"), MAX_BROWSER_TIMEOUT_SEC).sendKeys("admin");
@@ -60,7 +65,7 @@ public class datadictIT extends AbstractSubmarineIT {
     // Start Routing & Navigation in data-dict 
     LOG.info("Start Routing & Navigation in data-dict");
     pollingWait(By.xpath("//span[contains(text(), \"Manager\")]"), MAX_BROWSER_TIMEOUT_SEC).click();
-    WebDriverWait wait = new WebDriverWait( driver, 60);
+    WebDriverWait wait = new WebDriverWait( driver, 120);
     pollingWait(By.xpath("//a[@href='/workbench/manager/dataDict']"), MAX_BROWSER_TIMEOUT_SEC).click();
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[@class='ant-breadcrumb-link ng-star-inserted']")));
     Assert.assertEquals(driver.getCurrentUrl(), "http://localhost:8080/workbench/manager/dataDict");
@@ -96,8 +101,11 @@ public class datadictIT extends AbstractSubmarineIT {
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@id='dataDictMorePROJECT_TYPE']")));
     pollingWait(By.xpath("//a[@id='dataDictMorePROJECT_TYPE']"), MAX_BROWSER_TIMEOUT_SEC).click();
     pollingWait(By.xpath("//li[@id='dataDictConfigurationPROJECT_TYPE']"), MAX_BROWSER_TIMEOUT_SEC).click();
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@id='dataDictItemAddPROJECT_TYPE']")));
     pollingWait(By.xpath("//button[@id='dataDictItemAddPROJECT_TYPE']"), MAX_BROWSER_TIMEOUT_SEC).click();
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[@class='ant-cascader-picker-label']")));
     pollingWait(By.xpath("//span[@class='ant-cascader-picker-label']"), MAX_BROWSER_TIMEOUT_SEC).click();
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//li[@title='unavailable']")));
     pollingWait(By.xpath("//li[@title='unavailable']"), MAX_BROWSER_TIMEOUT_SEC).click();
     pollingWait(By.xpath("//input[@id='newItemCodePROJECT_TYPE']"), MAX_BROWSER_TIMEOUT_SEC).sendKeys("qqq");
     pollingWait(By.xpath("//input[@id='newItemNamePROJECT_TYPE']"), MAX_BROWSER_TIMEOUT_SEC).sendKeys("www");

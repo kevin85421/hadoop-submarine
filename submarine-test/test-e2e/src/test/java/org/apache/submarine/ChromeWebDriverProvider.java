@@ -97,6 +97,7 @@ public class ChromeWebDriverProvider implements WebDriverProvider {
     System.setProperty("webdriver.chrome.driver", webDriverPath);
     ChromeOptions chromeOptions = new ChromeOptions();
     chromeOptions.addArguments("--headless");
+    chromeOptions.addArguments("window-size=1920,1080");
     return new ChromeDriver(chromeOptions);
   }
 
